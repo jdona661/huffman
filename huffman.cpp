@@ -6,11 +6,9 @@
 using namespace std;
 
 int frequencies[256] = {0};
+PQ<int> tree = PQ<int>(2);
 
-//int* buildFrequencyTable()
-
-void test(string filename) {
-
+int* buildFrequencyTable(string filename){
 	ifstream file(filename.c_str());
 
 	char* ch = new char[1];
@@ -19,14 +17,21 @@ void test(string filename) {
 		frequencies[*ch] += 1;
 	}
 	file.close();
-
-	for(int i = 0; i<256; i++){
-		cout << frequencies[i] << " ";
-	}
 }
 
 
 int main(int argc, char* argv[]){
-	test("test.txt");
+	
+	if (argc != 2){
+		cout << "Usage: huffman [filename]" << endl;
+		return 1;
+	}
+	
+	buildFrequencyTable(string(argv[1]));
+	
+	for(int i = 0; i<256; i++){
+		cout << frequencies[i] << " ";
+	}
+	
 	return 0;
 }
