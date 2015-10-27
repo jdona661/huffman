@@ -1,39 +1,78 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <algorithm>
 #include "pq.h"
+#include "huffman.h"
 
 using namespace std;
 
-PQ<int> tree = PQ<int>(2);
-int frequencies[256] = {0};
+int counts[256] = {0};
 
-void buildFrequencyTable(string filename){
 
-	ifstream file(filename.c_str());
 
+struct HuffmanNode {
+	char character;
+	unsigned int weight;
+	
+	HuffmanNode(char ch, unsigned int w): character(ch), weight(w) {}
+
+	bool operator<(HuffmanNode const& rhs) const {
+		if(this->weight < rhs.weight){
+			return true;
+		}else{
+			return false;
+		}
+	}
+};
+
+
+
+
+Huffman::Huffman(int* frequencies){
+	PQ<HuffmanNode> heap = PQ<HuffmanNode>(2);	
+
+	//build initial minheap
+	for(char ch = 0; ch < 256; ch++){
+		if(frequencies[ch] != 0){
+			HuffmanNode node = HuffmanNode(ch,frequencies[ch]);
+			heap.push(node);
+		}
+	}
+	
+	//Extract two minimum nodes
+	while(heap.size() > 1){
+		HuffmanNode left = heap.top();
+		heap.pop();
+		HuffmanNode right = heap.top();
+		heap.pop();
+	}	
+}
+
+Huffman Huffman::buildTreeFromFile(const char *filename){
+	int counts[256] = {0};
+	Huffman huffman;
+	ifstream file(filename);
 	char* ch = new char[1];
 	while(file){
 		file.read(ch,1);
-		frequencies[*ch] += 1;
+		counts[*ch] += 1;
 	}
-	file.close();
+
+	huffman = Huffman(counts);
+	return huffman;
+	
 }
 
 
 int main(int argc, char* argv[]){
-	if (argc != 2){
-		cout << "Usage: huffman [filename]" << endl;
-		return 1;
+
+	if(argc != 2){
+		cout << "proper usage: huffman [file_to_compress]" << endl;
+		return 0;
 	}
+
 	
-	buildFrequencyTable(string(argv[1]));
-	
-	
-	for(int i = 0; i<256; i++){
-		cout << frequencies[i] << " ";
-	}
-	
+	Huffman huffman;
+	huffman = Huffman::buildTreeFromFile(argv[1]);
 	return 0;
 }
