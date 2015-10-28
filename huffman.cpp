@@ -11,41 +11,53 @@ int counts[256] = {0};
 
 
 struct HuffmanNode {
-	char character;
+	char ch;
 	unsigned int weight;
+	HuffmanNode* left;
+	HuffmanNode* right;
 	
-	HuffmanNode(char ch, unsigned int w): character(ch), weight(w) {}
+	HuffmanNode(char c, unsigned int w): ch(c), weight(w), left(nullptr), right(nullptr) { ; }
+	HuffmanNode(char c, unsigned int w, HuffmanNode* l, HuffmanNode* r): ch(c), weight(w), left(l), right(r) { ; }
+	bool isLeaf(){
+		return (left==nullptr and right==nullptr);
+	}
+
+
+
 
 	bool operator<(HuffmanNode const& rhs) const {
-		if(this->weight < rhs.weight){
-			return true;
-		}else{
-			return false;
-		}
+		return this->weight < rhs.weight;
 	}
 };
 
 
 
 
-Huffman::Huffman(int* frequencies){
+Huffman::Huffman(const int* frequencies){
 	PQ<HuffmanNode> heap = PQ<HuffmanNode>(2);	
 
 	//build initial minheap
 	for(char ch = 0; ch < 256; ch++){
 		if(frequencies[ch] != 0){
-			HuffmanNode node = HuffmanNode(ch,frequencies[ch]);
-			heap.push(node);
+			heap.push(HuffmanNode(ch,frequencies[ch]));
 		}
 	}
 	
 	//Extract two minimum nodes
 	while(heap.size() > 1){
-		HuffmanNode left = heap.top();
+		HuffmanNode* left = &(heap.top());
 		heap.pop();
-		HuffmanNode right = heap.top();
+		HuffmanNode* right = &(heap.top());
 		heap.pop();
-	}	
+
+		
+		HuffmanNode node = HuffmanNode('$', left->weight + right->weight, left, right);
+		heap.push(node);
+	}
+
+	root = heap.top();
+
+
 }
 
 Huffman Huffman::buildTreeFromFile(const char *filename){
@@ -63,6 +75,9 @@ Huffman Huffman::buildTreeFromFile(const char *filename){
 	
 }
 
+Huffman::~Huffman(){
+	return;
+}
 
 int main(int argc, char* argv[]){
 

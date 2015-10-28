@@ -5,8 +5,9 @@
 struct HuffmanNode;
 class Huffman {
 	HuffmanNode *root;
-	Huffman(const std::unordered_map<char, unsigned int> &charFreq);
-public:
+	Huffman(const int* frequencies);
+
+public:	
 	Huffman() : root(nullptr) { ; }
 	~Huffman();
 	static Huffman buildTreeFromFile(const char *filename);
