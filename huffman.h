@@ -2,6 +2,7 @@
 #define HUFFMAN_H
 #include <unordered_map>
 
+
 struct HuffmanNode;
 class Huffman {
 	HuffmanNode *root;
