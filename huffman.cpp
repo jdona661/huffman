@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include <bitset>
+#include <cassert>
 
 #include "pq.h"
 #include "huffman.h"
@@ -21,23 +22,35 @@ struct HuffmanNode {
 		return (left==nullptr && right==nullptr);
 	}
 
-	string encodeChar(char c, string code="") {
+	string encode(char c, string code="") {
         string encoding = "";
         if (isLeaf() && ch == c) return code;
         if (nullptr != left) {
-            encoding += left->encodeChar(c, code + "0");
+            encoding += left->encode(c, code + "0");
         }
         if (nullptr != right) {
-            encoding += right->encodeChar(c, code + "1");
+            encoding += right->encode(c, code + "1");
         }
         return encoding;
     }
 
+    char decode(string& code){
+    	if(isLeaf()){
+    		return ch;
+    	}
+
+    	char dir = code[0];
+    	code.erase(code.begin(),code.begin()+1);
+    	if(dir == '0'){
+    		return left->decode(code);
+    	}else if(dir == '1'){
+    		return right->decode(code);
+    	}	
+    }
 
 	bool operator<(HuffmanNode const& rhs) const {
 		return this->weight > rhs.weight;		//why this works, I don't know 
 	}
-
 };
 
 
@@ -61,10 +74,6 @@ Huffman::Huffman(const int* frequencies){
 		heap.pop();
 		HuffmanNode* right = new HuffmanNode(heap.top().ch,heap.top().weight,heap.top().left, heap.top().right);
 		heap.pop();
-
-		cout << "popped " << left->ch << " and " << right->ch << endl;
-		cout << "stack size: " << heap.size() << endl; 		
-
 		HuffmanNode node =  HuffmanNode('$', left->weight + right->weight, left, right);
 		heap.push(node);
 	}
@@ -89,34 +98,78 @@ Huffman Huffman::buildTreeFromFile(const char *filename){
 }
 
 void Huffman::compress(const char *source, const char *dest){
+	cout << "= = = = = = = = = = COMPRESSING = = = = = = = = = =" << endl;
 	string intermediate;
-	bitset<8> byte;
-
-	ifstream sfile(source);
+	int paddingSize;
+	ifstream sfile(source,ios::binary);
 	ofstream dfile(dest);
 
 	char ch;
 	//create string with codes 
-	while(sfile){
-		sfile.get(ch);
-		cout << ch << " " << root->encodeChar(ch) << endl;
-		intermediate += root->encodeChar(ch);
+	while(sfile.get(ch)){
+		cout << ch << " " << root->encode(ch) << endl;
+		intermediate += root->encode(ch);
+	}
+
+	if (intermediate.length() % 8 == 0){				//calculate required padding
+		paddingSize = 0;
+	}else{
+		paddingSize = 8 - (intermediate.length() % 8);
+	}
+	
+	cout << "paddingSize: " << paddingSize << endl;		
+	intermediate.insert(0,paddingSize,'0');				//prepend padding to intermediate
+	dfile << (char)paddingSize;							//insert padding amount byte to file
+	cout << "intermediate " << intermediate << endl;
+
+	for(int i = 0; i < intermediate.length(); i += 8){
+		string byteString = intermediate.substr(i,8);
+		cout << byteString << endl;
+		bitset<8> bits;
+		bits.set();
+		for(int j = 0; j < 8; ++j){
+			if(byteString[j] == '0') { bits.set((8-j-1)%8,0); }
+		}
+		cout << "bits: " <<  bits << endl;
+		dfile << char(bits.to_ulong());
 	}
 	cout << intermediate << endl;
-	int paddingSize = 8 - (intermediate.length() % 8);
+}
 
-	intermediate.insert(0,paddingSize,'0'); 
-	char paddingSizeByte = (char)paddingSize;
+void Huffman::decompress(const char *source, const char *dest){
+	cout << "= = = = = = = = = = DECOMPRESSING = = = = = = = = = =" << endl;
+	string bytes;
+	string bits;
+	char paddingSize;
+	ifstream sfile(source,ios::binary);
+	ofstream dfile(dest);
 
+	sfile.get(paddingSize);
 
+	char ch;
+	while(sfile.get(ch)){
+		bytes += ch;
+	}
+	sfile.close();
 
-	//dfile << paddingSizeByte;
+	cout << "bytes: " <<  bytes << endl;
+	cout << "total bytes: " << bytes.length() << endl << endl;
 
-	cout << paddingSize << " padding bits required" << endl; 
-	cout << "padding byte: " << paddingSizeByte << endl;
+	for(char ch: bytes){
+		bits += bitset<8>(ch).to_string();
+	}
+	cout << "bits with padding: " << bits << endl;
+	cout << "padding size: " << (int)paddingSize << endl;
+	bits.erase(bits.begin(),bits.begin() + (int)paddingSize);	
+	cout << "bits without padding: " << bits << endl;
 
-	cout << intermediate << endl;
-
+	while(bits.length() > 1){
+		cout << bits << endl;
+		char c = root->decode(bits);
+		cout << c << endl;
+		dfile << c;
+	}
+	dfile.close();
 }
 
 
@@ -126,15 +179,25 @@ Huffman::~Huffman(){
 }
 
 int main(int argc, char* argv[]){
+	string usage = "proper usage: huffman -[c,d] [source] [dest]\n-c: compress source file to destination\n-d: decompress source file to destination\n";
 
-	if(argc != 2){
-		cout << "proper usage: huffman [file_to_compress]" << endl;
-		return 0;
+	if(argc != 4){
+		cout << usage;
+		return 1;
 	}
 
-	
-	Huffman huffman;
-	huffman = Huffman::buildTreeFromFile(argv[1]);
-	huffman.compress(argv[1], "asef");
+	if(string(argv[1]) == "-c"){
+		Huffman huffman;
+		huffman = Huffman::buildTreeFromFile(argv[2]);
+		huffman.compress(argv[2], argv[3]);
+
+		cout << "testing . . . " << endl;
+		huffman.decompress(argv[3], "final.txt");
+		return 0;
+	}else{
+		cout << usage;
+		return 1;
+	}
+
 	return 0;
 }
