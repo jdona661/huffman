@@ -118,8 +118,18 @@ Huffman Huffman::buildTreeFromFile(const char *filename){
 }
 
 Huffman Huffman::readTreeFromFile(const char *filename){
+	ifstream sfile(filename);
+	string line;
 	Huffman huffman;
+
+	while (sfile){
+		getline(sfile, line);
+		//cout << line << endl;
+		//split on ':' and begin building tree based on zeroes and ones    
+	}
+
 	return huffman;
+
 }
 
 void Huffman::saveTreeToFile(const char *filename){
@@ -215,9 +225,7 @@ int main(int argc, char* argv[]){
 		return 0;
 	}else if(string(argv[1]) == "-d"){
 		Huffman huffman;
-		huffman = Huffman::buildTreeFromFile(argv[2]);
-		huffman.saveTreeToFile("tree.txt");
-		cout << "saved tree to tree.txt" << endl;
+		huffman = Huffman::readTreeFromFile("tree.txt");
 		return 1;
 	}
 
