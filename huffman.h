@@ -6,7 +6,7 @@
 struct HuffmanNode;
 class Huffman {
 	HuffmanNode *root;
-	char* frequencies;
+	const int* frequencies;
 	Huffman(const int* _frequencies);
 
 public:	
