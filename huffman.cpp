@@ -120,21 +120,42 @@ Huffman Huffman::buildTreeFromFile(const char *filename){
 Huffman Huffman::readTreeFromFile(const char *filename){
 	ifstream sfile(filename);
 	string line;
-	Huffman huffman;
+	HuffmanNode* root = new HuffmanNode('$',0);
 
 	while (sfile){
 		getline(sfile, line);
 		//cout << line << endl;
-		//split on ':' and begin building tree based on zeroes and ones    
+		//split on ':' and begin building tree based on zeroes and ones 
+		if (line.length() > 3){   
+			string path = line.substr(2, path.size() - 1);
+			char character = line[0];
+			cout << character << " | " << path << endl;
+
+			HuffmanNode* current = root;
+			for(char c: path){
+				if(c == '0'){
+					if(current->left == nullptr){
+						current->left = new HuffmanNode('$',0);
+					}
+					current = current->left;
+				}else if (c == '1'){
+					if(current->right == nullptr){
+						current->right = new HuffmanNode('$',0);
+					}
+					current = current->right;				
+				}
+			}
+			current->ch = character;
+		}
 	}
-
+	Huffman huffman = Huffman(root);
 	return huffman;
-
 }
 
 void Huffman::saveTreeToFile(const char *filename){
 	ofstream dfile(filename);
 	for (char ch: root->toString()){
+		
 		dfile << ch << ":" << root->encode(ch) << endl;
 	}
 	dfile.close();
@@ -158,7 +179,6 @@ void Huffman::compress(const char *source, const char *dest){
 		paddingSize = 8 - (intermediate.length() % 8);
 	}
 	
-	cout << "paddingSize: " << paddingSize << endl;		
 	intermediate.insert(0,paddingSize,'0');				//prepend padding to intermediate
 	dfile << (char)paddingSize;							//insert padding amount byte to file
 	
@@ -208,10 +228,26 @@ Huffman::~Huffman(){
 	return;
 }
 
+void Huffman::runUnitTests(){
+	Huffman huffman = Huffman::buildTreeFromFile("test.txt");
+	huffman.compress("test.txt","output.huf");
+	huffman.saveTreeToFile("tree.txt");
+
+	cout << "successfully compressed " << "test.txt" << " to " << "output.huf" << endl;
+
+	Huffman huffman2 = Huffman::readTreeFromFile("tree.txt");
+	huffman2.saveTreeToFile("tree2.txt");
+
+	huffman2.decompress("output.huf", "decompressed.txt");
+	return;
+}
+
 int main(int argc, char* argv[]){
 	string usage = "proper usage: huffman -[c,d] [source] [dest]\n-c: compress source file to destination\n-d: decompress source file to destination\n";
-
-	if(argc != 4){
+	if(argc == 1){
+		Huffman::runUnitTests();
+		return 0;
+	}else if(argc != 4){
 		cout << usage;
 		return 1;
 	}
@@ -220,13 +256,19 @@ int main(int argc, char* argv[]){
 		Huffman huffman;
 		huffman = Huffman::buildTreeFromFile(argv[2]);
 		huffman.compress(argv[2], argv[3]);
+		huffman.saveTreeToFile("tree.txt");
 		cout << "successfully compressed " << argv[2] << " to " << argv[3] << endl;
 
 		return 0;
 	}else if(string(argv[1]) == "-d"){
 		Huffman huffman;
 		huffman = Huffman::readTreeFromFile("tree.txt");
-		return 1;
+		huffman.decompress(argv[2],argv[3]);
+		cout << "successfully decompressed " << argv[2] << " to " << argv[3] << endl;
+		return 0;
+	}else{
+		cout << usage;
+		return 1;   
 	}
 
 	return 0;
